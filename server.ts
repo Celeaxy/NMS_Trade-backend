@@ -6,11 +6,11 @@ import { createClient } from '@libsql/client';
 const app = express();
 
 const corsOptions = {
-  origin: 'https://celeaxy.github.io/NMS_Trade-frontend/',
+  origin: ['https://celeaxy.github.io/NMS_Trade-frontend/',
+  'https://upgraded-space-potato-xp95jr75jqrh6pw7-5173.app.github.dev'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   optionsSuccessStatus: 200 // For legacy browsers
 };
-
 
 app.use(cors(corsOptions));
 app.use(express.json());
