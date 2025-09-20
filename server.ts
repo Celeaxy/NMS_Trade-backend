@@ -4,7 +4,15 @@ import cors from 'cors';
 import { createClient } from '@libsql/client';
 
 const app = express();
-app.use(cors());
+
+const corsOptions = {
+  origin: 'https://celeaxy.github.io/NMS_Trade-frontend/',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  optionsSuccessStatus: 200 // For legacy browsers
+};
+
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const TURSO_URL = process.env.TURSO_DATABASE_URL;
