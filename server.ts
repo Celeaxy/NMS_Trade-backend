@@ -59,6 +59,25 @@ app.post('/api/item', async (req: Request, res: Response) => {
   }
 });
 
+app.delete('/api/item/:id', async (req: Request, res: Response) => {
+  const itemId = req.params.id;
+  const userToken = req.query.userToken as string;
+  if (!userToken) return res.status(400).json({ error: 'Missing userToken' });
+  try {
+    await tursoClient.execute(
+      'DELETE FROM items WHERE id = ? AND userToken = ?',
+      [itemId, userToken]
+    );
+    await tursoClient.execute(
+      'DELETE FROM demands WHERE item_id = ? AND userToken = ?',
+      [itemId, userToken]
+    );
+    res.json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/api/stations', async (req: Request, res: Response) => {
   const userToken = req.query.userToken as string;
   if (!userToken) return res.status(400).json({ error: 'Missing userToken' });
@@ -98,6 +117,25 @@ app.post('/api/station', async (req: Request, res: Response) => {
   }
 });
 
+app.delete('/api/station/:id', async (req: Request, res: Response) => {
+  const stationId = req.params.id;
+  const userToken = req.query.userToken as string;
+  if (!userToken) return res.status(400).json({ error: 'Missing userToken' });
+  try {
+    await tursoClient.execute(
+      'DELETE FROM stations WHERE id = ? AND userToken = ?',
+      [stationId, userToken]
+    );
+    await tursoClient.execute(
+      'DELETE FROM demands WHERE station_id = ? AND userToken = ?',
+      [stationId, userToken]
+    );
+    res.json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/api/demands', async (req: Request, res: Response) => {
   const userToken = req.query.userToken as string;
   if (!userToken) return res.status(400).json({ error: 'Missing userToken' });
@@ -128,6 +166,26 @@ app.post('/api/demand', async (req: Request, res: Response) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+app.delete('/api/demand', async (req: Request, res: Response) => {
+  const { station_id, item_id, userToken } = req.body;
+  if (!userToken) return res.status(400).json({ error: 'Missing userToken' });
+  if (station_id === undefined || item_id === undefined) {
+    return res.status(400).json({ error: 'Missing demand data' });
+  }
+  try {
+    await tursoClient.execute(
+      'DELETE FROM demands WHERE station_id = ? AND item_id = ? AND userToken = ?',
+      [station_id, item_id, userToken]
+    );
+    res.json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
