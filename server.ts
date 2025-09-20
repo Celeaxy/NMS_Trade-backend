@@ -28,58 +28,6 @@ const tursoClient = createClient({
   authToken: TURSO_DATABASE_TOKEN,
 });
 
-app.post('/api/migrate', async (req: Request, res: Response) => {
-  const { items, stations, userToken } = req.body;
-  if (!userToken) return res.status(400).json({ error: 'Missing userToken' });
-  try {
-    await tursoClient.execute(`CREATE TABLE IF NOT EXISTS items (
-      id INTEGER,
-      name TEXT,
-      value REAL,
-      userToken TEXT,
-      PRIMARY KEY (id, userToken)
-    )`);
-    await tursoClient.execute(`CREATE TABLE IF NOT EXISTS stations (
-      id INTEGER,
-      name TEXT,
-      userToken TEXT,
-      PRIMARY KEY (id, userToken)
-    )`);
-    await tursoClient.execute(`CREATE TABLE IF NOT EXISTS demands (
-      station_id INTEGER,
-      item_id INTEGER,
-      demand REAL,
-      userToken TEXT,
-      PRIMARY KEY (station_id, item_id, userToken),
-      FOREIGN KEY (station_id, userToken) REFERENCES stations(id, userToken) ON DELETE CASCADE,
-      FOREIGN KEY (item_id, userToken) REFERENCES items(id, userToken) ON DELETE CASCADE
-    )`);
-    for (const item of items) {
-      await tursoClient.execute(
-        `INSERT OR REPLACE INTO items (id, name, value, userToken) VALUES (?, ?, ?, ?)`,
-        [item.id, item.name, item.value, userToken]
-      );
-    }
-    for (const station of stations) {
-      await tursoClient.execute(
-        `INSERT OR REPLACE INTO stations (id, name, userToken) VALUES (?, ?, ?)`,
-        [station.id, station.name, userToken]
-      );
-      if (Array.isArray(station.items)) {
-        for (const tradeItem of station.items) {
-          await tursoClient.execute(
-            `INSERT OR REPLACE INTO demands (station_id, item_id, demand, userToken) VALUES (?, ?, ?, ?)`,
-            [station.id, tradeItem.item.id, tradeItem.demand, userToken]
-          );
-        }
-      }
-    }
-    res.json({ success: true });
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 app.get('/api/items', async (req: Request, res: Response) => {
   const userToken = req.query.userToken as string;
   if (!userToken) return res.status(400).json({ error: 'Missing userToken' });
@@ -89,6 +37,23 @@ app.get('/api/items', async (req: Request, res: Response) => {
       [userToken]
     );
     res.json(result.rows);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/item', async (req: Request, res: Response) => {
+  const { id, name, value, userToken } = req.body;
+  if (!userToken) return res.status(400).json({ error: 'Missing userToken' });
+  if (id === undefined || !name || value === undefined) {
+    return res.status(400).json({ error: 'Missing item data' });
+  }
+  try {
+    await tursoClient.execute(
+      `INSERT OR REPLACE INTO items (id, name, value, userToken) VALUES (?, ?, ?, ?)`,
+      [id, name, value, userToken]
+    );
+    res.json({ success: true });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -108,15 +73,57 @@ app.get('/api/stations', async (req: Request, res: Response) => {
   }
 });
 
+app.post('/api/station', async (req: Request, res: Response) => {
+  const { id, name, items, userToken } = req.body;
+  if (!userToken) return res.status(400).json({ error: 'Missing userToken' });
+  if (id === undefined || !name) {
+    return res.status(400).json({ error: 'Missing station data' });
+  }
+  try {
+    await tursoClient.execute(
+      `INSERT OR REPLACE INTO stations (id, name, userToken) VALUES (?, ?, ?)`,
+      [id, name, userToken]
+    );
+    if (Array.isArray(items)) {
+      for (const tradeItem of items) {
+        await tursoClient.execute(
+          `INSERT OR REPLACE INTO demands (station_id, item_id, demand, userToken) VALUES (?, ?, ?, ?)`,
+          [id, tradeItem.item.id, tradeItem.demand, userToken]
+        );
+      }
+    }
+    res.json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/api/demands', async (req: Request, res: Response) => {
   const userToken = req.query.userToken as string;
   if (!userToken) return res.status(400).json({ error: 'Missing userToken' });
-  try {
+   try {
     const result = await tursoClient.execute(
       'SELECT station_id, item_id, demand FROM demands WHERE userToken = ?',
       [userToken]
     );
     res.json(result.rows);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/demand', async (req: Request, res: Response) => {
+  const { station_id, item_id, demand, userToken } = req.body;
+  if (!userToken) return res.status(400).json({ error: 'Missing userToken' });
+  if (station_id === undefined || item_id === undefined || demand === undefined) {
+    return res.status(400).json({ error: 'Missing demand data' });
+  }
+  try {
+    await tursoClient.execute(
+      `INSERT OR REPLACE INTO demands (station_id, item_id, demand, userToken) VALUES (?, ?, ?, ?)`,
+      [station_id, item_id, demand, userToken]
+    );
+    res.json({ success: true });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
