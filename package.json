@@ -1,7 +1,7 @@
 {
   "name": "nms_traderoutes-backend",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "dist/server.js",
   "type": "commonjs",
   "scripts": {
     "build": "tsc",
