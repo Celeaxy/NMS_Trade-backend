@@ -96,8 +96,8 @@ app.put("/api/item/:id", requireToken, async (req: Request, res: Response) => {
   const sql = `UPDATE Items SET ${fields.join(", ")} WHERE Id = ? AND UserToken = ?`;
 
   try {
-    await tursoClient.execute(sql, params);
-    res.json({ success: true });
+    const result = await tursoClient.execute(sql, params);
+    res.json(result);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -146,11 +146,11 @@ app.post("/api/station", requireToken, async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Missing station data" });
   }
   try {
-    await tursoClient.execute(
+    const result = await tursoClient.execute(
       `INSERT OR REPLACE INTO Stations (Id, Name, UserToken) VALUES (?, ?, ?)`,
       [id, name, userToken],
     );
-    res.json({ success: true });
+    res.json(result);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -170,12 +170,12 @@ app.put(
     }
 
     try {
-      await tursoClient.execute(
+      const result = await tursoClient.execute(
         `UPDATE Stations SET Name = ? WHERE Id = ? AND UserToken = ?`,
         [name, stationId, userToken],
       );
 
-      res.json({ success: true });
+      res.json(result);
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -227,11 +227,11 @@ app.post("/api/demand", requireToken, async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Missing demand data" });
   }
   try {
-    await tursoClient.execute(
+    const result = await tursoClient.execute(
       `INSERT OR REPLACE INTO Demands (StationId, ItemId, DemandLevel, UserToken) VALUES (?, ?, ?, ?)`,
       [stationId, itemId, demandLevel, userToken],
     );
-    res.json({ success: true });
+    res.json(result);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -248,11 +248,11 @@ app.put("/api/demand", requireToken, async (req: Request, res: Response) => {
   const { demandLevel } = req.body;
 
   try {
-    await tursoClient.execute(
+    const result = await tursoClient.execute(
       "UPDATE Demands SET DemandLevel = ? WHERE StationId = ? AND ItemId = ? AND UserToken = ?",
       [demandLevel, stationId, itemId, userToken],
     );
-    res.json({ success: true });
+    res.json(result);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
