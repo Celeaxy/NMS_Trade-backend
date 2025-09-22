@@ -7,13 +7,15 @@ const app = express();
 
 const corsOptions = {
   origin: [
-    "https://celeaxy.github.io/NMS_Trade-frontend/",
+    "https://celeaxy.github.io/NMS_Trade-frontend",
     "https://upgraded-space-potato-xp95jr75jqrh6pw7-5173.app.github.dev",
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   optionsSuccessStatus: 200, // For legacy browsers
 };
 
+app.options("*", cors(corsOptions)); // Enable pre-flight for all routes
 app.use(cors(corsOptions));
 app.use(express.json());
 
