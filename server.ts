@@ -50,7 +50,7 @@ app.get("/api/items", requireToken, async (req: Request, res: Response) => {
 
   try {
     const result = await tursoClient.execute(
-      "SELECT Id, Name, Value FROM Items WHERE UserToken = ?",
+      "SELECT * FROM Items WHERE userToken = ?",
       [userToken],
     );
     res.json(result.rows);
@@ -65,10 +65,18 @@ app.post("/api/item", requireToken, async (req: Request, res: Response) => {
 
   try {
     const result = await tursoClient.execute(
-      `INSERT OR REPLACE INTO Items (Name, Value, UserToken) VALUES (?, ?, ?)`,
+      `INSERT OR REPLACE INTO Items (name, value, userToken) VALUES (?, ?, ?)`,
       [name, value, userToken],
     );
-    res.json(result);
+    // Fetch the created item
+    if (typeof result.lastInsertRowid === "undefined") {
+      return res.status(500).json({ error: "Failed to retrieve inserted item ID" });
+    }
+    const item = await tursoClient.execute(
+      `SELECT * FROM Items WHERE id = ? AND userToken = ?`,
+      [Number(result.lastInsertRowid), userToken],
+    );
+    res.json(item.rows[0]);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -98,8 +106,13 @@ app.put("/api/item/:id", requireToken, async (req: Request, res: Response) => {
   const sql = `UPDATE Items SET ${fields.join(", ")} WHERE Id = ? AND UserToken = ?`;
 
   try {
-    const result = await tursoClient.execute(sql, params);
-    res.json(result);
+    await tursoClient.execute(sql, params);
+    // Fetch the updated item
+    const updated = await tursoClient.execute(
+      `SELECT * FROM Items WHERE id = ? AND userToken = ?`,
+      [itemId, userToken],
+    );
+    res.json(updated.rows[0]);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -141,18 +154,23 @@ app.get("/api/stations", requireToken, async (req: Request, res: Response) => {
 app.post("/api/station", requireToken, async (req: Request, res: Response) => {
   const userToken = req.userToken!;
 
-  const { id, name, items } = req.body;
+  const { name } = req.body;
 
-  if (!userToken) return res.status(400).json({ error: "Missing userToken" });
-  if (id === undefined || !name) {
-    return res.status(400).json({ error: "Missing station data" });
-  }
   try {
     const result = await tursoClient.execute(
-      `INSERT OR REPLACE INTO Stations (Id, Name, UserToken) VALUES (?, ?, ?)`,
-      [id, name, userToken],
+      `INSERT OR REPLACE INTO Stations (name, userToken) VALUES (?, ?)`,
+      [name, userToken],
     );
-    res.json(result);
+
+    if (typeof result.lastInsertRowid === "undefined") {
+      return res.status(500).json({ error: "Failed to retrieve inserted item ID" });
+    }
+    // Fetch the created station
+    const station = await tursoClient.execute(
+      `SELECT * FROM Stations WHERE id = ? AND userToken = ?`,
+      [Number(result.lastInsertRowid), userToken],
+    );
+    res.json(station.rows[0]);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -172,12 +190,16 @@ app.put(
     }
 
     try {
-      const result = await tursoClient.execute(
+      await tursoClient.execute(
         `UPDATE Stations SET Name = ? WHERE Id = ? AND UserToken = ?`,
         [name, stationId, userToken],
       );
-
-      res.json(result);
+      // Fetch the updated station
+      const station = await tursoClient.execute(
+        `SELECT * FROM Stations WHERE Id = ? AND UserToken = ?`,
+        [stationId, userToken],
+      );
+      res.json(station.rows[0]);
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -229,11 +251,16 @@ app.post("/api/demand", requireToken, async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Missing demand data" });
   }
   try {
-    const result = await tursoClient.execute(
+    await tursoClient.execute(
       `INSERT OR REPLACE INTO Demands (StationId, ItemId, DemandLevel, UserToken) VALUES (?, ?, ?, ?)`,
       [stationId, itemId, demandLevel, userToken],
     );
-    res.json(result);
+    // Fetch the created demand
+    const demand = await tursoClient.execute(
+      `SELECT StationId, ItemId, DemandLevel FROM Demands WHERE StationId = ? AND ItemId = ? AND UserToken = ?`,
+      [stationId, itemId, userToken],
+    );
+    res.json(demand.rows[0]);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -247,14 +274,25 @@ app.put("/api/demand", requireToken, async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Missing demand data" });
   }
 
+  const stationIdNum = Number(stationId);
+  const itemIdNum = Number(itemId);
+  if (isNaN(stationIdNum) || isNaN(itemIdNum)) {
+    return res.status(400).json({ error: "Invalid stationId or itemId" });
+  }
+
   const { demandLevel } = req.body;
 
   try {
-    const result = await tursoClient.execute(
+    await tursoClient.execute(
       "UPDATE Demands SET DemandLevel = ? WHERE StationId = ? AND ItemId = ? AND UserToken = ?",
-      [demandLevel, stationId, itemId, userToken],
+      [demandLevel, stationIdNum, itemIdNum, userToken],
     );
-    res.json(result);
+    // Fetch the updated demand
+    const demand = await tursoClient.execute(
+      `SELECT * FROM Demands WHERE StationId = ? AND ItemId = ? AND UserToken = ?`,
+      [stationIdNum, itemIdNum, userToken],
+    );
+    res.json(demand.rows[0]);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
