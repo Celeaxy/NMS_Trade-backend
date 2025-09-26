@@ -9,6 +9,7 @@ const corsOptions = {
   origin: [
     "https://celeaxy.github.io/NMS_Trade-frontend",
     "https://upgraded-space-potato-xp95jr75jqrh6pw7-5173.app.github.dev",
+    "http://localhost:5173"
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -74,7 +75,7 @@ app.post("/api/item", requireToken, async (req: Request, res: Response) => {
     }
     const item = await tursoClient.execute(
       `SELECT * FROM Items WHERE id = ? AND userToken = ?`,
-      [Number(result.lastInsertRowid), userToken],
+      [result.lastInsertRowid, userToken],
     );
     res.json(item.rows[0]);
   } catch (e: any) {
@@ -168,7 +169,7 @@ app.post("/api/station", requireToken, async (req: Request, res: Response) => {
     // Fetch the created station
     const station = await tursoClient.execute(
       `SELECT * FROM Stations WHERE id = ? AND userToken = ?`,
-      [Number(result.lastInsertRowid), userToken],
+      [result.lastInsertRowid, userToken],
     );
     res.json(station.rows[0]);
   } catch (e: any) {
