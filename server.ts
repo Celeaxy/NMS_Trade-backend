@@ -7,7 +7,7 @@ const app = express();
 
 const corsOptions = {
   origin: [
-    "https://celeaxy.github.io/NMS_Trade",
+    "https://celeaxy.github.io",
     "https://upgraded-space-potato-xp95jr75jqrh6pw7-5173.app.github.dev",
     "http://localhost:5173"
   ],
